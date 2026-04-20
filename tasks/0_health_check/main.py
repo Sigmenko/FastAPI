@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from typing import Optional, List, Dict
 from pydantic import BaseModel
+from fastapi import status
 app = FastAPI()
 
 class Users(BaseModel):
@@ -18,6 +19,14 @@ class SensorReading(BaseModel):
     sensor_id: int
     temperature: float
     status: str
+class PostCreate(BaseModel):
+    title: str
+    body: str
+    author_id: int
+
+class UserCreate(BaseModel):
+    name: str
+    age: int
 
 #запуск сервера
 #uvicorn - сервер #main:app - файл в якому находиться обєкт який ми створили # --reload - при якійсь змінні сервер перезапускається
@@ -45,6 +54,17 @@ posts = [
 async def items() -> List[Post]:
     return [Post(**post) for post in posts]
 
+@app.post("/items/add")
+async def add_items(post:PostCreate) -> Post:
+    author = next((user for user in users if user['id'] == post.author_id),None)
+    if not author:
+        raise HTTPException(status_code=404, detail='Author not founded')
+
+    new_post_id = len(posts) + 1
+    new_post = {'id':new_post_id, 'title': post.title, 'body': post.body, 'author':author}
+    posts.append(new_post)
+
+    return Post(**new_post)
 
 @app.get("/items/{id}")
 async def items(id:int) -> Post:
@@ -63,11 +83,23 @@ async def search(post_id: Optional[int] = None) -> Dict[str, Optional[Post]]:
     for post in posts:
         if post['id'] == post_id:
             return {"data": Post(**post)}
-    raise HTTPException(status_code=404, detail="Post not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
 @app.get("/users")
 async def allUsers() -> List[Users]:
     return [Users(**user) for user in users]
+
+@app.post("/users/add")
+async def add_users(user: UserCreate) -> Users:
+    new_id_news = len(users) + 1
+    new_users_age = user.age
+    if new_users_age < 18:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Age users is too young  ")
+    new_user = {'id': new_id_news, 'name':user.name, 'age':user.age}
+    users.append(new_user)
+    return Users(**new_user)
+
+
 
 @app.get("/users/{id}")
 async def allUsers(id:int) -> Users:
@@ -81,6 +113,7 @@ async def get_user_post(id: int) -> List[Post]:
     for post in posts:
         if post['author']['id'] == id:
             founded_posts.append(Post(**post))
+
 
     return founded_posts
 @app.get("/sensor")
