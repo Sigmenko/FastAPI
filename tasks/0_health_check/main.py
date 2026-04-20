@@ -14,9 +14,19 @@ class Post(BaseModel):
     body: str
     author: Users
 
+class SensorReading(BaseModel):
+    sensor_id: int
+    temperature: float
+    status: str
+
 #запуск сервера
 #uvicorn - сервер #main:app - файл в якому находиться обєкт який ми створили # --reload - при якійсь змінні сервер перезапускається
+sensors = [
+    {'sensor_id': 1, 'temperature': 34.2,'status': 'online'},
+    {'sensor_id': 2, 'temperature': 35.0, 'status': 'online'},
+    {'sensor_id': 3, 'temperature': 30.1, 'status': 'ofline'}
 
+]
 users = [
     {'id': 1, 'name': 'Bob', 'age': 18},
     {'id': 2, 'name': 'Alex', 'age': 19},
@@ -73,3 +83,14 @@ async def get_user_post(id: int) -> List[Post]:
             founded_posts.append(Post(**post))
 
     return founded_posts
+@app.get("/sensor")
+async def sensor():
+    return sensors
+
+@app.post("/sensor/data")
+async def check_sensor(reading:SensorReading):
+    sensors.append(reading)
+    if reading.temperature > 100:
+        return {"alert": "Overheating!", "data": reading}
+    else:
+        return {'status':"ok", 'data':reading}
