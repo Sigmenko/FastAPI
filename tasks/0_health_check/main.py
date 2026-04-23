@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException
-from typing import Optional, List, Dict
+from fastapi import FastAPI, HTTPException, Path
+from typing import Optional, List, Dict, Annotated
 from pydantic import BaseModel
 app = FastAPI()
 
@@ -47,7 +47,7 @@ async def items() -> List[Post]:
 
 
 @app.get("/items/{id}")
-async def items(id:int) -> Post:
+async def items(id: Annotated[int, Path(..., title='P-p-prikol', ge= 1)]) -> Post:
     for post in posts:
         if post['id'] == id:
             return Post(**post)
